@@ -1,0 +1,292 @@
+# Phase 3: Q-Learning in Gridworld
+
+## Objective
+
+- Move from **planning** (value iteration with a known model) to **model-free learning**.
+- Introduce the **action-value function** $Q(s, a)$ and how it guides greedy decisions.
+- Understand and implement the basic **Q-learning** update rule with $\epsilon$-greedy exploration.
+- Apply Q-learning to the same 4×4 Gridworld environment from Phase 1.
+
+**Disclaimer.** As before, the math will be informal and intuition‑oriented. The goal is to build a strong gut feeling for how Q-learning works, not to prove theorems.
+
+---
+
+## Environment: 4×4 Gridworld (Unknown Dynamics)
+
+We use the same Gridworld as in Phase 1:
+
+- 4×4 grid.
+- Start state $S = (0, 0)$ (top‑left).
+- Goal state $G = (3, 3)$ (bottom‑right).
+- Actions: up, down, left, right.
+- Trying to move outside the grid leaves you in the same cell.
+- Each non‑terminal step gives reward $-1$.
+- Episode terminates as soon as we reach $G$.
+- Discount factor: $\gamma = 1.0$.
+
+```text
+S . . .
+. . . .
+. . . .
+. . . G
+```
+
+The **key new twist** in this phase is how we *think* about the environment:
+
+- In Phase 1, we assumed we knew all transitions $P(s' \mid s, a)$ and could run **value iteration** over the entire state space.
+- In Phase 3, we imagine we *do not know* the dynamics or transition probabilities.  
+  We only get samples $(s_t, a_t, r_{t+1}, s_{t+1})$ by interacting with the environment.
+
+We want to learn good behavior *directly from experience*, without building an explicit model of the environment.
+
+---
+
+## From State Values to Action Values
+
+In Phase 1 we focused on the **state value function**:
+$$V_\pi(s) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R_{t+1} \mid S_0 = s\right],$$
+and especially on the **optimal** value function $V_*(s)$.
+
+Now we introduce the **action-value function** (or **Q-function**):
+$$Q_\pi(s, a) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R_{t+1} \mid S_0 = s, A_0 = a\right].$$
+
+Intuitively:
+
+- $Q_\pi(s, a)$ = “How good is it to *take action $a$ in state $s$* and then follow policy $\pi$ afterward?”
+- $Q_*(s, a) = \max_\pi Q_\pi(s, a)$ is the best achievable expected return if we start from $(s, a)$ and act optimally.
+
+Knowing $Q_*(s, a)$ is very powerful:
+
+- An **optimal policy** can be obtained greedily:
+  $$\pi_*(s) = \arg\max_{a} Q_*(s, a).$$
+- We can act optimally without explicitly computing $V_*(s)$ or the transition model.
+
+---
+
+## The Q-Learning Update Rule
+
+Q-learning is a **model-free**, **off-policy**, **temporal-difference** (TD) control algorithm.  
+It maintains an estimate $Q(s, a)$ for every state–action pair and updates it using data from actual episodes.
+
+Suppose at time $t$ we are in state $s_t$, choose action $a_t$, receive reward $r_{t+1}$, and land in next state $s_{t+1}$.  
+The Q-learning update is:
+
+$$
+Q_{t+1}(s_t, a_t)
+=
+Q_t(s_t, a_t)
++
+\alpha \Bigl[
+  r_{t+1}
+  +
+  \gamma \max_{a'} Q_t(s_{t+1}, a')
+  -
+  Q_t(s_t, a_t)
+\Bigr],
+$$
+
+where:
+
+- $\alpha \in (0, 1]$ is the **learning rate**.
+- $\gamma$ is the discount factor (here $\gamma = 1.0$).
+- $\max_{a'} Q_t(s_{t+1}, a')$ is the **bootstrap target**, assuming we act greedily from the next state.
+
+Interpretation:
+
+- The term in brackets is a **TD error**:
+  $$\delta_t = r_{t+1} + \gamma \max_{a'} Q_t(s_{t+1}, a') - Q_t(s_t, a_t).$$
+- If $\delta_t > 0$, we were too pessimistic about $(s_t, a_t)$ and increase $Q(s_t, a_t)$.
+- If $\delta_t < 0$, we were too optimistic and decrease $Q(s_t, a_t)$.
+- Over many episodes, the estimates $Q(s, a)$ converge (under suitable conditions) toward $Q_*(s, a)$.
+
+Note how this uses only sampled transitions $(s_t, a_t, r_{t+1}, s_{t+1})$ and does not require knowing the full transition model.
+
+---
+
+## Exploration vs Exploitation: $\epsilon$-Greedy
+
+If we always pick the action with the highest current $Q(s, a)$, we may get stuck in a bad “local” behavior pattern:
+
+- We might never try actions that currently look bad, even though they could be better in the long run.
+
+To avoid this, we use an **$\epsilon$-greedy** policy during training:
+
+- With probability $1 - \epsilon$, choose the greedy action:
+  $$a = \arg\max_{a'} Q(s, a').$$
+- With probability $\epsilon$, choose a random action (explore).
+
+Typically:
+
+- Start with a relatively large $\epsilon$ (e.g., 0.1 or 0.2).
+- Optionally **decay** $\epsilon$ over time as our estimates become more reliable.
+
+This balances:
+
+- **Exploration** (try actions we are uncertain about),
+- **Exploitation** (use actions currently believed to be best).
+
+---
+
+## Algorithm Sketch for Gridworld
+
+We summarize a basic Q-learning loop for the 4×4 Gridworld:
+
+1. Initialize $Q(s, a)$ for all states $s$ and actions $a$ (for example, to 0).
+2. For each episode:
+   - Set $s \leftarrow S$ (start state).
+   - Repeat until $s$ is terminal (we reach $G$):
+     - Choose $a$ from $s$ using $\epsilon$-greedy on $Q(s, \cdot)$.
+     - Take action $a$, observe reward $r$ and next state $s'$.
+     - Update
+       $$Q(s, a) \leftarrow Q(s, a) + \alpha \Bigl[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \Bigr].$$
+     - Set $s \leftarrow s'$.
+3. After many episodes, derive an approximate optimal policy by taking
+   $$\pi(s) = \arg\max_a Q(s, a).$$
+
+In this simple Gridworld, the resulting greedy policy should resemble the Phase 1 value-iteration solution: a roughly shortest‑path route to the goal.
+
+---
+
+## Code Example (python)
+
+Below is a minimal Q-learning implementation for the 4×4 Gridworld.  
+You can copy this into a script (for example `pre_school/3_q_learning_Gridworld.py`) and run it with Python.
+
+```python
+import numpy as np
+
+GRID_SIZE = 4
+NUM_ACTIONS = 4  # up, down, left, right
+
+START_STATE = (0, 0)
+GOAL_STATE = (GRID_SIZE - 1, GRID_SIZE - 1)
+
+GAMMA = 1.0
+ALPHA = 0.1
+EPSILON = 0.1
+NUM_EPISODES = 1000
+MAX_STEPS_PER_EPISODE = 100
+STEP_REWARD = -1.0
+
+
+def is_terminal(state: tuple[int, int]) -> bool:
+    return state == GOAL_STATE
+
+
+def step(state: tuple[int, int], action: int) -> tuple[tuple[int, int], float, bool]:
+    """Take one step in the 4x4 Gridworld."""
+    r, c = state
+    if action == 0:  # up
+        dr, dc = -1, 0
+    elif action == 1:  # down
+        dr, dc = 1, 0
+    elif action == 2:  # left
+        dr, dc = 0, -1
+    else:  # action == 3, right
+        dr, dc = 0, 1
+
+    nr, nc = r + dr, c + dc
+    # If moving would leave the grid, stay in place
+    if not (0 <= nr < GRID_SIZE and 0 <= nc < GRID_SIZE):
+        nr, nc = r, c
+
+    next_state = (nr, nc)
+    done = is_terminal(next_state)
+    reward = STEP_REWARD  # -1 on every non-terminal step (including the last move)
+    return next_state, reward, done
+
+
+def epsilon_greedy(Q: np.ndarray, state: tuple[int, int], epsilon: float) -> int:
+    """Choose an action using epsilon-greedy with respect to Q."""
+    if np.random.rand() < epsilon:
+        return np.random.randint(NUM_ACTIONS)
+    r, c = state
+    return int(np.argmax(Q[r, c]))
+
+
+def q_learning_gridworld(
+    num_episodes: int = NUM_EPISODES,
+    alpha: float = ALPHA,
+    gamma: float = GAMMA,
+    epsilon: float = EPSILON,
+) -> np.ndarray:
+    # Q has shape (GRID_SIZE, GRID_SIZE, NUM_ACTIONS)
+    Q = np.zeros((GRID_SIZE, GRID_SIZE, NUM_ACTIONS), dtype=float)
+
+    for episode in range(num_episodes):
+        state = START_STATE
+
+        for _ in range(MAX_STEPS_PER_EPISODE):
+            if is_terminal(state):
+                break
+
+            action = epsilon_greedy(Q, state, epsilon)
+            next_state, reward, done = step(state, action)
+
+            r, c = state
+            nr, nc = next_state
+
+            # TD target using max over next-state actions (off-policy)
+            best_next = np.max(Q[nr, nc])
+            td_target = reward + gamma * best_next
+            td_error = td_target - Q[r, c, action]
+
+            # Q-learning update
+            Q[r, c, action] += alpha * td_error
+
+            state = next_state
+            if done:
+                break
+
+        # Optional: simple progress print
+        if (episode + 1) % 100 == 0:
+            print(f"Episode {episode + 1}/{num_episodes} completed")
+
+    return Q
+
+
+def greedy_policy_from_Q(Q: np.ndarray) -> np.ndarray:
+    """Return a 2D array of greedy actions from Q."""
+    policy = np.zeros((GRID_SIZE, GRID_SIZE), dtype=int)
+    for r in range(GRID_SIZE):
+        for c in range(GRID_SIZE):
+            policy[r, c] = int(np.argmax(Q[r, c]))
+    return policy
+
+
+if __name__ == "__main__":
+    Q = q_learning_gridworld()
+    policy = greedy_policy_from_Q(Q)
+    print("Greedy policy (0=up,1=down,2=left,3=right):")
+    print(policy)
+```
+
+---
+
+## How to Interpret the Result
+
+- The learned $Q(s, a)$ approximates the optimal action-value function $Q_*(s, a)$ for this Gridworld.
+- The derived greedy policy should roughly correspond to a shortest-path strategy from $S$ to $G$.
+- Because of randomness in exploration, individual runs may produce slightly different Q-tables and policies, but the qualitative behavior should be similar.
+
+Comparing with Phase 1:
+
+- Phase 1 computed $V_*(s)$ with full knowledge of the dynamics.
+- Phase 3 learns behavior directly from sampled experience, without ever building a model $P(s' \mid s, a)$.
+
+---
+
+## Practice Exercises
+
+1. **Change the reward structure.**  
+   Try setting the step reward to $-0.1$ or giving a small positive reward at the goal (e.g., $+10$ on entering $G$). How does that affect the learned policy?
+
+2. **Vary exploration.**  
+   Experiment with different values of $\epsilon$ (e.g., 0.0, 0.05, 0.2) and see how it changes learning speed and final performance. What happens if $\epsilon = 0$ from the start?
+
+3. **Decay $\epsilon$ over time.**  
+   Implement a schedule where $\epsilon$ starts larger (e.g., 0.3) and slowly decays to a smaller value (e.g., 0.01). Does this help?
+
+4. **Visualize the policy.**  
+   Instead of printing the policy as numbers 0–3, print arrow symbols (↑, ↓, ←, →) in a 4×4 grid to visualize the path toward the goal.
+
