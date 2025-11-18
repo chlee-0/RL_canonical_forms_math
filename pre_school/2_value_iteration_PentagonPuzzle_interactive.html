@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pentagon Puzzle Playground</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 16px 40px;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .pentagon {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 16px auto;
+    }
+    .state-cell {
+      position: absolute;
+      width: 70px;
+      padding: 8px 0;
+      text-align: center;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-weight: 600;
+      transform: translate(-50%, -50%);
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+    .state-cell:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+    /* 오각형 위에 0~4번 상태를 배치 */
+    .pos-0 { top: 8%;  left: 50%; }   /* 맨 위 */
+    .pos-1 { top: 34%; left: 90%; }   /* 오른쪽 위 */
+    .pos-2 { top: 80%; left: 70%; }   /* 오른쪽 아래 */
+    .pos-3 { top: 80%; left: 30%; }   /* 왼쪽 아래 */
+    .pos-4 { top: 34%; left: 10%; }   /* 왼쪽 위 */
+    .state-cell.negative {
+      background-color: #ffe5e5;
+      color: #a00;
+    }
+    .state-cell.nonnegative {
+      background-color: #e6ffea;
+      color: #036d19;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    button {
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #999;
+      background: #f5f5f5;
+      font-size: 0.9rem;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .info {
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    .log {
+      margin-top: 16px;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      max-height: 260px;
+      overflow-y: auto;
+      font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+    .log-entry {
+      margin-bottom: 4px;
+    }
+    .terminal {
+      font-weight: 600;
+      color: #a00;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pentagon Puzzle Playground</h1>
+  <p>
+    Pentagon Puzzle의 상태 전이 규칙을 브라우저에서 직접 버튼으로 실험할 수 있는 간단한 UI입니다.
+  </p>
+
+  <h2>현재 상태 s = (s₀, s₁, s₂, s₃, s₄)</h2>
+  <p>각 sᵢ는 오각형의 꼭짓점에 배치되어 있으며, 인덱스는 시계 방향으로 0→1→2→3→4 입니다.</p>
+  <p>모든 sᵢ가 0 이상이면 성공 상태이며, 스텝 수가 100을 넘으면 타임아웃으로 간주합니다.</p>
+  <div id="statePentagon" class="pentagon"></div>
+
+  <div class="info">
+    <div>합계 Σ sᵢ: <span id="sumDisplay"></span></div>
+    <div>스텝 수: <span id="stepCount"></span> / <span id="maxSteps"></span></div>
+    <div>종료 여부: <span id="terminalFlag"></span></div>
+    <div>마지막 보상: <span id="finalReward"></span></div>
+  </div>
+
+  <p>각 꼭짓점을 클릭하면 해당 인덱스 <code>a</code>에 해당하는 행동이 적용됩니다.</p>
+
+  <h2>초기화 / 랜덤 시작</h2>
+  <div class="buttons">
+    <button id="resetFixed">고정 초기 상태로 리셋</button>
+    <button id="resetRandom">랜덤 초기 상태로 리셋</button>
+    <button id="clearLog">로그 지우기</button>
+  </div>
+
+  <h3>직접 초기 상태 설정</h3>
+  <p>(예: 20, 18, -1, -13, -17 처럼 정수 5개를 입력하세요.)</p>
+  <div class="buttons">
+    <label>
+      s₀:
+      <input id="init0" type="number" style="width: 60px;" />
+    </label>
+    <label>
+      s₁:
+      <input id="init1" type="number" style="width: 60px;" />
+    </label>
+    <label>
+      s₂:
+      <input id="init2" type="number" style="width: 60px;" />
+    </label>
+    <label>
+      s₃:
+      <input id="init3" type="number" style="width: 60px;" />
+    </label>
+    <label>
+      s₄:
+      <input id="init4" type="number" style="width: 60px;" />
+    </label>
+    <button id="applyCustomInit">이 초기 상태로 리셋</button>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <script>
+    // ---------- 환경 파라미터 (Python 코드와 맞춤) ----------
+    const DIM = 5;
+    const MAX_STEPS = 100;
+    // Python s_init과 동일한 고정 초기 상태
+    const FIXED_INIT_STATE = [20, 18, -1, -13, -17];
+
+    let state = FIXED_INIT_STATE.slice();
+    let steps = 0;
+    let terminal = false;
+    let lastReward = 0;
+
+    const sumDisplay = document.getElementById("sumDisplay");
+    const stepCount = document.getElementById("stepCount");
+    const maxStepsSpan = document.getElementById("maxSteps");
+    const terminalFlag = document.getElementById("terminalFlag");
+    const finalReward = document.getElementById("finalReward");
+    const logDiv = document.getElementById("log");
+    const statePentagon = document.getElementById("statePentagon");
+
+    const customInputs = [];
+    for (let i = 0; i < DIM; i++) {
+      const inp = document.getElementById(`init${i}`);
+      if (inp) customInputs.push(inp);
+    }
+    const applyCustomInitBtn = document.getElementById("applyCustomInit");
+
+    maxStepsSpan.textContent = String(MAX_STEPS);
+
+    function isSuccess(s) {
+      return s.every(v => v >= 0);
+    }
+
+    function isTimeout(step) {
+      return step >= MAX_STEPS;
+    }
+
+    function giveReward(s) {
+      if (isSuccess(s)) return 1.0;
+      return -1.0;
+    }
+
+    // Python State.nxt_state(a)와 같은 전이
+    function nextState(curr, a) {
+      const s = curr.slice();
+      const idx = ((a % DIM) + DIM) % DIM;
+      const sa = s[idx];
+      const left = (idx - 1 + DIM) % DIM;
+      const right = (idx + 1) % DIM;
+
+      s[left] += sa;
+      s[idx] = -sa;
+      s[right] += sa;
+      return s;
+    }
+
+    function render() {
+      // state cells (오각형 위에 배치)
+      statePentagon.innerHTML = "";
+      state.forEach((v, i) => {
+        const cell = document.createElement("div");
+        const signClass = v < 0 ? "negative" : "nonnegative";
+        cell.className = `state-cell pos-${i} ${signClass}`;
+        cell.textContent = `s${i} = ${v}`;
+        // 꼭짓점을 클릭해서 행동 a = i 를 적용
+        cell.addEventListener("click", () => {
+          if (!terminal) {
+            stepEnv(i);
+          }
+        });
+        statePentagon.appendChild(cell);
+      });
+      // info
+      const sum = state.reduce((acc, v) => acc + v, 0);
+      sumDisplay.textContent = String(sum);
+      stepCount.textContent = String(steps);
+      terminalFlag.textContent = terminal
+        ? (isSuccess(state) ? "성공" : "타임아웃/실패")
+        : "진행 중";
+      terminalFlag.className = terminal ? "terminal" : "";
+      finalReward.textContent = terminal ? String(lastReward.toFixed(3)) : "-";
+    }
+
+    function log(message) {
+      const div = document.createElement("div");
+      div.className = "log-entry";
+      div.textContent = message;
+      logDiv.appendChild(div);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function resetFixed() {
+      state = FIXED_INIT_STATE.slice();
+      steps = 0;
+      terminal = false;
+      lastReward = 0;
+      log("=== 고정 초기 상태로 리셋 ===");
+      render();
+    }
+
+    function randomInitState() {
+      // [-20, 20]에서 랜덤 정수,
+      // - 합 > 0
+      // - 음수 성분이 최소 3개 이상
+      while (true) {
+        const s = [];
+        for (let i = 0; i < DIM; i++) {
+          const v = Math.floor(Math.random() * 41) - 20; // [-20, 20]
+          s.push(v);
+        }
+        const sum = s.reduce((acc, v) => acc + v, 0);
+        const negativeCount = s.filter(v => v < 0).length;
+        if (sum > 0 && negativeCount >= 3) return s;
+      }
+    }
+
+    function resetRandom() {
+      state = randomInitState();
+      steps = 0;
+      terminal = false;
+      lastReward = 0;
+      log("=== 랜덤 초기 상태로 리셋 ===");
+      render();
+    }
+
+    function resetCustom() {
+      if (customInputs.length !== DIM) return;
+      const s = [];
+      for (let i = 0; i < DIM; i++) {
+        const valStr = customInputs[i].value.trim();
+        if (valStr === "") {
+          alert("모든 sᵢ에 정수를 입력해주세요.");
+          return;
+        }
+        const val = parseInt(valStr, 10);
+        if (Number.isNaN(val)) {
+          alert(`s${i}에 유효한 정수를 입력해주세요.`);
+          return;
+        }
+        s.push(val);
+      }
+      state = s;
+      steps = 0;
+      terminal = false;
+      lastReward = 0;
+      log(`=== 사용자 지정 초기 상태로 리셋: s = ${JSON.stringify(state)} ===`);
+      render();
+    }
+
+    function stepEnv(action) {
+      if (terminal) return;
+      const prev = state.slice();
+      const next = nextState(state, action);
+      state = next;
+      steps += 1;
+
+      // 종료 판정
+      if (isSuccess(state) || isTimeout(steps)) {
+        terminal = true;
+        lastReward = giveReward(state);
+        log(
+          `종료: step=${steps}, action=${action}, state=${JSON.stringify(
+            state
+          )}, reward=${lastReward.toFixed(3)}`
+        );
+      } else {
+        log(
+          `step=${steps}, action=${action}, state=${JSON.stringify(state)} ` +
+          `(prev=${JSON.stringify(prev)})`
+        );
+      }
+      render();
+    }
+
+    document.getElementById("resetFixed").addEventListener("click", resetFixed);
+    document.getElementById("resetRandom").addEventListener("click", resetRandom);
+    document.getElementById("clearLog").addEventListener("click", () => {
+      logDiv.innerHTML = "";
+    });
+    if (applyCustomInitBtn) {
+      applyCustomInitBtn.addEventListener("click", resetCustom);
+    }
+
+    // 초기 렌더링: 규칙을 반영해 랜덤 초기 상태에서 시작
+    resetRandom();
+  </script>
+</body>
+</html>
