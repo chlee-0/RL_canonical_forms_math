@@ -38,7 +38,7 @@ We define the finite set of all possible states as $S$, where each $s \in S$ rep
 
 A **policy** tells the agent how to choose actions in each state.
 
-- A **deterministic policy** is a function $\pi : S \to A$ that picks a single best action in each state (e.g., $\pi(s) = \text{right}$).
+- A **deterministic policy** is a function $\pi : S \to A$ that picks a single action in each state (e.g., $\pi(s) = \text{right}$).
 - A **stochastic policy** is a distribution over actions $\pi(a \mid s) = \mathbb{P}(A_t = a \mid S_t = s)$.
 
 In general we write $\pi(a \mid s)$; a deterministic policy is the special case where all probability mass is on one action.
