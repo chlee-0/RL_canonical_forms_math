@@ -1,6 +1,5 @@
 import numpy as np
 
-
 GRID_SIZE = 4
 NUM_ACTIONS = 4  # up, down, left, right
 
@@ -38,14 +37,14 @@ def step(state: tuple[int, int], action: int) -> tuple[tuple[int, int], float, b
 
     next_state = (nr, nc)
     done = is_terminal(next_state)
-    reward = STEP_REWARD  # -1 on every step (including the last move)
+    reward = STEP_REWARD  # -1 for every step (including the step that reaches the goal)
     return next_state, reward, done
 
 
 def epsilon_greedy(Q: np.ndarray, state: tuple[int, int], epsilon: float) -> int:
     """Choose an action using epsilon-greedy with respect to Q."""
     if np.random.rand() < epsilon:
-        return int(np.random.randint(NUM_ACTIONS))
+        return np.random.randint(NUM_ACTIONS)
     r, c = state
     return int(np.argmax(Q[r, c]))
 
@@ -56,7 +55,6 @@ def q_learning_gridworld(
     gamma: float = GAMMA,
     epsilon: float = EPSILON,
 ) -> np.ndarray:
-    """Run Q-learning on the 4x4 Gridworld and return the learned Q-table."""
     # Q has shape (GRID_SIZE, GRID_SIZE, NUM_ACTIONS)
     Q = np.zeros((GRID_SIZE, GRID_SIZE, NUM_ACTIONS), dtype=float)
 
@@ -74,7 +72,7 @@ def q_learning_gridworld(
             nr, nc = next_state
 
             # TD target using max over next-state actions (off-policy)
-            best_next = float(np.max(Q[nr, nc]))
+            best_next = np.max(Q[nr, nc])
             td_target = reward + gamma * best_next
             td_error = td_target - Q[r, c, action]
 
@@ -101,41 +99,26 @@ def greedy_policy_from_Q(Q: np.ndarray) -> np.ndarray:
     return policy
 
 
-def state_values_from_Q(Q: np.ndarray) -> np.ndarray:
-    """Approximate state values V(s) ≈ max_a Q(s, a)."""
-    return np.max(Q, axis=2)
-
-
-def print_value_table(V: np.ndarray) -> None:
-    """Pretty-print the state value table."""
-    print("State values V(s) ≈ max_a Q(s, a):")
-    print(np.round(V, 2))
-
-
-def print_policy(policy: np.ndarray) -> None:
-    """Print greedy policy both as action indices and arrows."""
-    print("Greedy policy (0=up,1=down,2=left,3=right):")
-    print(policy)
-
-    symbols = {0: "↑", 1: "↓", 2: "←", 3: "→"}
-    print("Greedy policy as arrows:")
+def print_policy_arrows(policy: np.ndarray) -> None:
+    """Pretty-print the greedy policy using arrow symbols."""
+    mapping = {0: "↑", 1: "↓", 2: "←", 3: "→"}
     for r in range(GRID_SIZE):
-        row = [symbols[int(policy[r, c])] for c in range(GRID_SIZE)]
-        print(" ".join(row))
+        row = " ".join(mapping[int(a)] for a in policy[r])
+        print(row)
+
+
+def print_q_table(Q: np.ndarray) -> None:
+    """Pretty-print Q-values for each state."""
+    np.set_printoptions(precision=2, suppress=True)
+    for r in range(GRID_SIZE):
+        for c in range(GRID_SIZE):
+            print(f"s={(r, c)} Q=[up,down,left,right] {Q[r, c]}")
 
 
 if __name__ == "__main__":
-    Q = q_learning_gridworld()
-
-    # Show basic information about the learned Q-table
-    print("Q-table shape:", Q.shape)
-    print(f"Q at START_STATE {START_STATE}:")
-    print(Q[START_STATE[0], START_STATE[1]])
-
-    # Derive and print state value table V(s) ≈ max_a Q(s, a)
-    V = state_values_from_Q(Q)
-    print_value_table(V)
-
-    # Derive and print greedy policy
+    Q = q_learning_gridworld(num_episodes=10000)
     policy = greedy_policy_from_Q(Q)
-    print_policy(policy)
+    print("\nLearned Q-table:")
+    print_q_table(Q)
+    print("\nGreedy policy (arrows):")
+    print_policy_arrows(policy)

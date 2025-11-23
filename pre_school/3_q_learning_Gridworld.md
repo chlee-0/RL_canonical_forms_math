@@ -23,7 +23,7 @@
 
 ## Environment: 4×4 Gridworld (Same as Phase 1)
 
-We use the same 4×4 Gridworld as in Phase 1 (start state $S=(0,0)$, goal state $G=(3,3)$, four moves up/down/left/right, reward $-1$ per step, $\gamma=1.0$; see Phase 1 for details).
+We use the same 4×4 Gridworld as in Phase 1 (start state $S=(0,0)$, goal state $G=(3,3)$, four moves up/down/left/right, reward $-1$ per step, $\gamma=1.0$; see [Phase 1: Value Iteration in Gridworld](./1_value_iteration_Gridworld.md) for details.
 
 ```text
 S . . .
@@ -34,7 +34,9 @@ S . . .
 
 The key difference is how we use the environment:
 
-- In Phase 1, we assumed full knowledge of transitions $P(s' \mid s, a)$ and could run **value iteration** over the entire state space.
+- In Phase 1, the transition map was fully known and deterministic —  
+for each $(s,a)$ there was a single next state $s'$.  
+Thus we could run value iteration over all states.
 - In Phase 3, we imagine the agent does not know the transition rules.
 It only sees samples $(s_t, a_t, r_{t+1}, s_{t+1})$ by interacting with the environment.
 
@@ -44,20 +46,44 @@ We want to learn good behavior *directly from experience*, without building an e
 
 ## From State Values to Action Values
 
-In Phase 1 we focused on the **state value function**:
-$$V_\pi(s) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R(s_t, a_t) \mid s_0 = s\right],$$
-and especially on the **optimal** value function $V_*(s)$.
+In Phase 1 we focused on the **state value function** for a given policy $\pi$:
+$$V_{\pi}(s) = \mathbb{E}_{\pi}\left[\sum_{t=0}^{T} \gamma^t R(s_t, a_t) \mid s_0 = s\right],$$
+and especially on the **optimal** value function $V_{*}(s)$.
 
 Now we introduce the **action-value function** (or **Q-function**):
-$$Q_\pi(s, a) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R(s_t, a_t) \mid s_0 = s, a_0 = a\right].$$
+$$Q_{\pi}(s, a) = \mathbb{E}_{\pi}\left[\sum_{t=0}^{T} \gamma^t R(s_t, a_t) \mid s_0 = s, a_0 = a\right].$$
 
 Intuitively:
 
-- $Q_\pi(s, a)$ = “How good is it to *take action $a$ in state $s$* and then follow policy $\pi$ afterward?”
-- $Q_*(s, a) = \max_\pi Q_\pi(s, a)$ is the best return achievable if we start from $(s, a)$ and act optimally.
+- $Q_{\pi}(s, a)$ = “How good is it to *take action $a$ in state $s$* and then follow policy $\pi$ afterward?”
+- $Q_{*}(s, a) = \max_{\pi} Q_{\pi}(s, a)$ is the best return achievable if we start from $(s, a)$ and act optimally.
 
 We can recover an optimal policy greedily:
-  $$\pi_*(s) = \arg\max_{a} Q_*(s, a).$$
+  $$\pi_{*}(s) = \arg\max_{a} Q_{*}(s, a).$$
+
+
+### Relationship between $V_{*}$ and $Q_{*}$
+
+These two optimal functions are tightly connected.  
+First, the optimal value of a state is simply the value of its best first action:
+
+$$
+V_{*}(s) = \max_{a} Q_{*}(s,a).
+$$
+
+Conversely, $Q_{*}(s,a)$ can be written in terms of $V_{*}$:
+$$
+Q_{*}(s,a)
+=
+R(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, V_{*}(s').
+$$
+
+In deterministic environments like our 4×4 Gridworld,
+$$
+Q_{*}(s,a) = R(s,a) + \gamma\, V_{*}(T(s,a)),
+$$
+where $T(s,a)$ is the next state reached from $(s,a)$.
+
 
 ---
 
@@ -90,7 +116,7 @@ Interpretation:
 
 - If $\delta_t > 0$, we were too pessimistic about $(s_t, a_t)$ and increase $Q(s_t, a_t)$.
 - If $\delta_t < 0$, we were too optimistic and decrease it.
-- Over many episodes, these adjustments allow $Q(s, a)$ to approach the optimal values $Q_*(s, a)$.
+- Over many episodes, these adjustments allow $Q(s, a)$ to approach the optimal values $Q_{*}(s, a)$.
 
 Q-learning works **without** knowing the transition model $P(s' \mid s, a)$;
 it only needs sample transitions $(s_t, a_t, r_{t+1}, s_{t+1})$.
@@ -124,7 +150,7 @@ We summarize a basic Q-learning loop for the 4×4 Gridworld:
 
 1. Initialize $Q(s, a)$ to zeros.
 2. For each episode:
-   - Set $s \leftarrow S$ (start state).
+   - Set $s \leftarrow s_0$ (start state).
    - Repeat until $s$ is terminal (we reach $G$):
      - Choose $a$ from $s$ using $\epsilon$-greedy on $Q(s, \cdot)$.
      - Take action $a$, observe reward $r$ and next state $s'$.
@@ -246,7 +272,7 @@ def greedy_policy_from_Q(Q: np.ndarray) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    Q = q_learning_gridworld()
+    Q = q_learning_gridworld(num_episodes=1000)
     policy = greedy_policy_from_Q(Q)
     print("Greedy policy (0=up,1=down,2=left,3=right):")
     print(policy)
@@ -256,28 +282,43 @@ if __name__ == "__main__":
 
 ## How to Interpret the Result
 
-- The learned $Q(s, a)$ approximates the optimal action-value function $Q_*(s, a)$ for this Gridworld.
+- The learned $Q(s, a)$ approximates the optimal action-value function $Q_{*}(s, a)$ for this Gridworld.
 - The derived greedy policy should roughly correspond to a shortest-path strategy from $S$ to $G$.
 - Because of randomness in exploration, individual runs may produce slightly different Q-tables and policies, but the qualitative behavior should be similar.
 
 Comparing with Phase 1:
 
-- Phase 1 computed $V_*(s)$ with full knowledge of the dynamics.
-- Phase 3 learns behavior directly from sampled experience, without ever building a model $P(s' \mid s, a)$.
+- Phase 1 computed $V_{*}(s)$ with full knowledge of the dynamics.
+- Phase 3 learns behavior directly from sampled experience, without ever using the transition rule in advance.
 
 ---
 
-## Practice Exercises
+## Exercises
 
-1. **Change the reward structure.**  
-   Try setting the step reward to $-0.1$ or giving a small positive reward at the goal (e.g., $+10$ on entering $G$). How does that affect the learned policy?
+1. **Compute the full theoretical $Q_{*}(s,a)$.**  
+   Using the Phase 1 result  
+   $V_{*}(s) = -d(s)$ (Manhattan distance), compute  
+   $$
+   Q_{*}(s,a) = -1 + V_{*}(T(s,a))
+   $$  
+   for *all* states $s$ and all actions $a$ in the 4×4 Gridworld.
 
-2. **Vary exploration.**  
-   Experiment with different values of $\epsilon$ (e.g., 0.0, 0.05, 0.2) and see how it changes learning speed and final performance. What happens if $\epsilon = 0$ from the start?
+2. **Compare learned $Q(s,a)$ to the theoretical $Q_{*}(s,a)$.**  
+   Modify the code to compute the difference  
+   $$
+   \max_{s,a} |Q(s,a) - Q_{*}(s,a)|.
+   $$  
+   If needed, increase the number of episodes to improve the match.
 
-3. **Decay $\epsilon$ over time.**  
-   Implement a schedule where $\epsilon$ starts larger (e.g., 0.3) and slowly decays to a smaller value (e.g., 0.01). Does this help?
+3. **Recover $V(s)$ from $Q(s,a)$.**  
+   Compute  
+   $$
+   V_Q(s) = \max_a Q(s,a)
+   $$  
+   and compare it with the theoretical  
+   $$
+   V_{*}(s) = -d(s).
+   $$  
+   How well do they agree?
 
-4. **Visualize the policy.**  
-   Instead of printing the policy as numbers 0–3, print arrow symbols (↑, ↓, ←, →) in a 4×4 grid to visualize the path toward the goal.
 
