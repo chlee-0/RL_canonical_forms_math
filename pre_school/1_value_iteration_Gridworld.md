@@ -178,7 +178,7 @@ print(V)
 
 ---
 
-## Practice Exercises
+## Exercises
 
 1. Move the goal to (2,2) and re-run the algorithm. How does V change?
 2. What happens if step reward is changed to -0.1?
