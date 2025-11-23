@@ -2,27 +2,28 @@
 
 ## Objective
 
-- Move from **planning** (value iteration with a known model) to **model-free learning**.
-- Introduce the **action-value function** $Q(s, a)$ and how it guides greedy decisions.
-- Understand and implement the basic **Q-learning** update rule with $\epsilon$-greedy exploration.
-- Apply Q-learning to the same 4×4 Gridworld environment from Phase 1.
+
+- In Phases 1 and 2, we could compute good behavior because we **knew exactly how the environment moves** and could run value iteration over all states.
+  In this phase, we ask a different question: can we learn similar behavior **just from trial-and-error experience**, without using the transition rules?
+- To do this, we introduce the **action-value function** $Q(s, a)$, which tells us how good it is to take action $a$ in state $s$ and then act well afterward.
+- We implement the basic **Q-learning** update rule and combine it with simple $\epsilon$-greedy exploration.
+- Finally, we apply Q-learning to the **same 4×4 Gridworld** from Phase 1 and compare the learned behavior to the value-iteration solution.
+
+> (Aside)  
+> In reinforcement learning, solving a task using a full model of the environment (as in Phase 1 value iteration)
+> is often called **planning**.  
+> Learning directly from experience without using the model, as we do here, is called **model‑free learning**.
+> You don’t need to remember these terms yet; they are just names for ideas you are already seeing.
+
+
 
 **Disclaimer.** As before, the math will be informal and intuition‑oriented. The goal is to build a strong gut feeling for how Q-learning works, not to prove theorems.
 
 ---
 
-## Environment: 4×4 Gridworld (Unknown Dynamics)
+## Environment: 4×4 Gridworld (Same as Phase 1)
 
-We use the same Gridworld as in Phase 1:
-
-- 4×4 grid.
-- Start state $S = (0, 0)$ (top‑left).
-- Goal state $G = (3, 3)$ (bottom‑right).
-- Actions: up, down, left, right.
-- Trying to move outside the grid leaves you in the same cell.
-- Each non‑terminal step gives reward $-1$.
-- Episode terminates as soon as we reach $G$.
-- Discount factor: $\gamma = 1.0$.
+We use the same 4×4 Gridworld as in Phase 1 (start state $S=(0,0)$, goal state $G=(3,3)$, four moves up/down/left/right, reward $-1$ per step, $\gamma=1.0$; see Phase 1 for details).
 
 ```text
 S . . .
@@ -31,11 +32,11 @@ S . . .
 . . . G
 ```
 
-The **key new twist** in this phase is how we *think* about the environment:
+The key difference is how we use the environment:
 
-- In Phase 1, we assumed we knew all transitions $P(s' \mid s, a)$ and could run **value iteration** over the entire state space.
-- In Phase 3, we imagine we *do not know* the dynamics or transition probabilities.  
-  We only get samples $(s_t, a_t, r_{t+1}, s_{t+1})$ by interacting with the environment.
+- In Phase 1, we assumed full knowledge of transitions $P(s' \mid s, a)$ and could run **value iteration** over the entire state space.
+- In Phase 3, we imagine the agent does not know the transition rules.
+It only sees samples $(s_t, a_t, r_{t+1}, s_{t+1})$ by interacting with the environment.
 
 We want to learn good behavior *directly from experience*, without building an explicit model of the environment.
 
@@ -44,22 +45,19 @@ We want to learn good behavior *directly from experience*, without building an e
 ## From State Values to Action Values
 
 In Phase 1 we focused on the **state value function**:
-$$V_\pi(s) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R_{t+1} \mid S_0 = s\right],$$
+$$V_\pi(s) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R(s_t, a_t) \mid s_0 = s\right],$$
 and especially on the **optimal** value function $V_*(s)$.
 
 Now we introduce the **action-value function** (or **Q-function**):
-$$Q_\pi(s, a) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R_{t+1} \mid S_0 = s, A_0 = a\right].$$
+$$Q_\pi(s, a) = \mathbb{E}_\pi\left[\sum_{t=0}^{T} \gamma^t R(s_t, a_t) \mid s_0 = s, a_0 = a\right].$$
 
 Intuitively:
 
 - $Q_\pi(s, a)$ = “How good is it to *take action $a$ in state $s$* and then follow policy $\pi$ afterward?”
-- $Q_*(s, a) = \max_\pi Q_\pi(s, a)$ is the best achievable expected return if we start from $(s, a)$ and act optimally.
+- $Q_*(s, a) = \max_\pi Q_\pi(s, a)$ is the best return achievable if we start from $(s, a)$ and act optimally.
 
-Knowing $Q_*(s, a)$ is very powerful:
-
-- An **optimal policy** can be obtained greedily:
+We can recover an optimal policy greedily:
   $$\pi_*(s) = \arg\max_{a} Q_*(s, a).$$
-- We can act optimally without explicitly computing $V_*(s)$ or the transition model.
 
 ---
 
