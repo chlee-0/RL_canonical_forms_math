@@ -63,65 +63,58 @@ We can recover an optimal policy greedily:
 
 ## The Q-Learning Update Rule
 
-Q-learning is a **model-free**, **off-policy**, **temporal-difference** (TD) control algorithm.  
-It maintains an estimate $Q(s, a)$ for every state–action pair and updates it using data from actual episodes.
+At time $t$, suppose the agent is in state $s_t$, takes action $a_t$,
+receives reward $r_{t+1} = R(s_t, a_t)$, and transitions to $s_{t+1}$.
 
-Suppose at time $t$ we are in state $s_t$, choose action $a_t$, receive reward $r_{t+1}$, and land in next state $s_{t+1}$.  
-The Q-learning update is:
-
-$$
-Q_{t+1}(s_t, a_t)
-=
-Q_t(s_t, a_t)
-+
-\alpha \Bigl[
+Q-learning updates its estimate $Q(s_t, a_t)$ using the rule
+$$Q_{t+1}(s_t, a_t)
+=Q_t(s_t, a_t)
++\alpha \Bigl[
   r_{t+1}
   +
   \gamma \max_{a'} Q_t(s_{t+1}, a')
   -
   Q_t(s_t, a_t)
-\Bigr],
-$$
+\Bigr].$$
 
-where:
+Here:
 
 - $\alpha \in (0, 1]$ is the **learning rate**.
 - $\gamma$ is the discount factor (here $\gamma = 1.0$).
 - $\max_{a'} Q_t(s_{t+1}, a')$ is the **bootstrap target**, assuming we act greedily from the next state.
 
+The bracketed term is the **temporal-difference (TD) error)**:
+  $$\delta_t = r_{t+1} + \gamma \max_{a'} Q_t(s_{t+1}, a') - Q_t(s_t, a_t).$$
+
 Interpretation:
 
-- The term in brackets is a **TD error**:
-  $$\delta_t = r_{t+1} + \gamma \max_{a'} Q_t(s_{t+1}, a') - Q_t(s_t, a_t).$$
 - If $\delta_t > 0$, we were too pessimistic about $(s_t, a_t)$ and increase $Q(s_t, a_t)$.
-- If $\delta_t < 0$, we were too optimistic and decrease $Q(s_t, a_t)$.
-- Over many episodes, the estimates $Q(s, a)$ converge (under suitable conditions) toward $Q_*(s, a)$.
+- If $\delta_t < 0$, we were too optimistic and decrease it.
+- Over many episodes, these adjustments allow $Q(s, a)$ to approach the optimal values $Q_*(s, a)$.
 
-Note how this uses only sampled transitions $(s_t, a_t, r_{t+1}, s_{t+1})$ and does not require knowing the full transition model.
+Q-learning works **without** knowing the transition model $P(s' \mid s, a)$;
+it only needs sample transitions $(s_t, a_t, r_{t+1}, s_{t+1})$.
 
 ---
 
 ## Exploration vs Exploitation: $\epsilon$-Greedy
 
-If we always pick the action with the highest current $Q(s, a)$, we may get stuck in a bad “local” behavior pattern:
+If the agent always picks the action with the highest current value $Q(s, a)$,
+it may get stuck repeating the same behavior and never discover better actions.
 
-- We might never try actions that currently look bad, even though they could be better in the long run.
-
-To avoid this, we use an **$\epsilon$-greedy** policy during training:
+To encourage exploration, we use an **$\epsilon$-greedy** rule during training:
 
 - With probability $1 - \epsilon$, choose the greedy action:
   $$a = \arg\max_{a'} Q(s, a').$$
 - With probability $\epsilon$, choose a random action (explore).
 
 Typically:
-
 - Start with a relatively large $\epsilon$ (e.g., 0.1 or 0.2).
 - Optionally **decay** $\epsilon$ over time as our estimates become more reliable.
 
-This balances:
-
-- **Exploration** (try actions we are uncertain about),
-- **Exploitation** (use actions currently believed to be best).
+This mechanism balances:
+- **Exploration** — trying actions we are uncertain about,
+- **Exploitation** — choosing the best-estimated action according to the current $Q$-values.
 
 ---
 
@@ -129,7 +122,7 @@ This balances:
 
 We summarize a basic Q-learning loop for the 4×4 Gridworld:
 
-1. Initialize $Q(s, a)$ for all states $s$ and actions $a$ (for example, to 0).
+1. Initialize $Q(s, a)$ to zeros.
 2. For each episode:
    - Set $s \leftarrow S$ (start state).
    - Repeat until $s$ is terminal (we reach $G$):
