@@ -105,7 +105,11 @@ def q_learning_pentagon(
             success_episodes += 1
 
         if (episode + 1) % 1000 == 0:
-            print(f"Episode {episode + 1}/{num_episodes} completed")
+            frac = success_episodes / float(episode + 1)
+            print(
+                f"Episode {episode + 1}/{num_episodes} completed | "
+                f"cumulative terminal fraction = {frac:.4f}"
+            )
 
     print(
         f"\nReached terminal in {success_episodes} / {num_episodes} episodes "
@@ -150,29 +154,35 @@ def show_top_states(
 def greedy_rollout(
     Q: dict[tuple[int, ...], np.ndarray],
     max_steps: int = 50,
-) -> list[tuple[int, ...]]:
-    """Follow the greedy policy from s_init using the learned Q-table."""
-    path: list[tuple[int, ...]] = []
+) -> list[tuple[tuple[int, ...], int | None]]:
+    """Follow the greedy policy from s_init using the learned Q-table.
+
+    Returns a list of (state, action) pairs; the action is None at the
+    terminal/unknown state where rollout stops.
+    """
+    path: list[tuple[tuple[int, ...], int | None]] = []
     state = INIT_STATE
 
     for _ in range(max_steps):
-        path.append(state)
         s_arr = np.array(state, dtype=int)
 
         if is_success(s_arr):
+            path.append((state, None))
             break
 
         if state not in Q:
             # We have no information about this state.
+            path.append((state, None))
             break
 
         q_values = Q[state]
         action = int(np.argmax(q_values))
+        path.append((state, action))
         next_arr = apply_action(s_arr, action)
         state = tuple(int(x) for x in next_arr)
 
         if is_success(next_arr):
-            path.append(state)
+            path.append((state, None))
             break
 
     return path
@@ -195,5 +205,13 @@ if __name__ == "__main__":
 
     rollout = greedy_rollout(Q)
     print("\nGreedy rollout from s_init:")
-    for s in rollout:
-        print(s)
+    print(f"(s_init = {INIT_STATE})")
+    for idx, (s, a) in enumerate(rollout):
+        if a is None:
+            print(f"{idx:02d}: s = {s} (terminal/unknown)")
+        else:
+            if idx + 1 < len(rollout):
+                s_next = rollout[idx + 1][0]
+                print(f"{idx:02d}: s = {s} --a={a}--> {s_next}")
+            else:
+                print(f"{idx:02d}: s = {s}, a = {a}")
