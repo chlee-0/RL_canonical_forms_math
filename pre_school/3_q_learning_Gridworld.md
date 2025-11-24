@@ -66,22 +66,13 @@ We can recover an optimal policy greedily:
 
 These two optimal functions are tightly connected.  
 First, the optimal value of a state is simply the value of its best first action:
-
-$$
-V_{*}(s) = \max_{a} Q_{*}(s,a).
-$$
+$$V_{*}(s) = \max_{a} Q_{*}(s,a).$$
 
 Conversely, $Q_{*}(s,a)$ can be written in terms of $V_{*}$:
-$$
-Q_{*}(s,a)
-=
-R(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, V_{*}(s').
-$$
+$$Q_{*}(s,a)=R(s,a) + \gamma \sum_{s'} P(s' \mid s,a)\, V_{*}(s').$$
 
 In deterministic environments like our 4×4 Gridworld,
-$$
-Q_{*}(s,a) = R(s,a) + \gamma\, V_{*}(T(s,a)),
-$$
+$$Q_{*}(s,a) = R(s,a) + \gamma\, V_{*}(T(s,a)),$$
 where $T(s,a)$ is the next state reached from $(s,a)$.
 
 
@@ -93,15 +84,7 @@ At time $t$, suppose the agent is in state $s_t$, takes action $a_t$,
 receives reward $r_{t+1} = R(s_t, a_t)$, and transitions to $s_{t+1}$.
 
 Q-learning updates its estimate $Q(s_t, a_t)$ using the rule
-$$Q_{t+1}(s_t, a_t)
-=Q_t(s_t, a_t)
-+\alpha \Bigl[
-  r_{t+1}
-  +
-  \gamma \max_{a'} Q_t(s_{t+1}, a')
-  -
-  Q_t(s_t, a_t)
-\Bigr].$$
+$$Q_{t+1}(s_t, a_t)=Q_t(s_t, a_t)+\alpha \Bigl[  r_{t+1}  +  \gamma \max_{a'} Q_t(s_{t+1}, a')  -  Q_t(s_t, a_t)\Bigr].$$
 
 Here:
 
