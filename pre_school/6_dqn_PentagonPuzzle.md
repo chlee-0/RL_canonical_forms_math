@@ -23,7 +23,7 @@ $$s_{i-1}' = s_{i-1} + s_i,\quad s_i'     = -s_i,\quad s_{i+1}' = s_{i+1} + s_i,
 ## What is new vs Phase 5 (Gridworld DQN)?
 
 - **Input size** is 5 (the vector itself), **output size** is 5 actions.
-- **State scale.** Use a simple normalization (e.g., divide by a constant like 20–50 or clip to a range) so the net sees moderate numbers.
+- **State scale.** Use a simple normalization (e.g., divide by a constant like 20–50 or clip to a range) so the net sees moderate numbers. In the code below we simply divide by 20.0, which roughly matches the magnitude of $s_\text{init}$.
 - Episodes are cut off after at most **50 steps** (if we have taken 50 moves without reaching success, we just stop that episode), matching Phase 4.
 - Everything else (replay, target net, $\epsilon$-greedy, TD target) is unchanged.
 
@@ -152,7 +152,7 @@ In the actual script we also:
 
 ## How to read the result
 
-- Larger $Q(s,a)$ means that move is closer (in expected steps) to success, given the reward design.
+- Larger $Q(s,a)$ generally means that move is better under the "$-1$ per step + optional goal bonus" reward design—typically corresponding to fewer expected steps to success, plus any contribution from the terminal bonus.
 - The greedy rollout path should look similar to the Phase 4 path; if it diverges, increase episodes or tweak scaling/bonus.
 - Printing the approximate $Q$-table at $s_\text{init}$ is a quick sanity check on which vertex move the net prefers.
 
@@ -162,7 +162,7 @@ In the actual script we also:
 
 After training the DQN on the Pentagon Puzzle from the fixed initial state $s_\text{init}$, test whether the network has learned something that generalizes beyond that single start:
 
-1. Sample many new integer states $s = (s_0,\dots,s_4)$ with $\sum_i s_i > 0$ (for example, draw each coordinate from a small integer range and reject samples whose sum is $\le 0$). 
+1. Sample many new integer states $s = (s_0,\dots,s_4)$ with $\sum_i s_i > 0$. 
 2. For each such $s$, run a greedy rollout using the learned $Q_\theta$ (always taking $\arg\max_a Q_\theta(s, a)$) with the same step cap (e.g. 50 steps) and record:
    - whether the rollout reaches a success state (all coordinates $\ge 0$),
    - how many steps it took if successful (or that it failed within the cap).
