@@ -22,10 +22,10 @@ EPSILON_END = 0.01
 EPSILON_DECAY = 0.995
 BATCH_SIZE = 64
 BUFFER_CAPACITY = 100_000
-NUM_EPISODES = 20_000
+NUM_EPISODES = 2_000
 MAX_STEPS_PER_EPISODE = 50
 TARGET_UPDATE = 200  # gradient steps between target syncs
-LOG_INTERVAL = 1_000
+LOG_INTERVAL = 100
 UPDATE_EVERY = 4  # how often to run a gradient step
 
 # Simple input scaling so the network sees moderate numbers
@@ -204,7 +204,7 @@ def train():
         returns.append(ep_return)
         lengths.append(ep_len)
 
-        if episode in (1, 10, 100) or episode % LOG_INTERVAL == 0:
+        if episode % LOG_INTERVAL == 0:
             frac_success = success_episodes / float(episode)
             print(
                 f"Episode {episode}/{NUM_EPISODES} completed | "
@@ -268,11 +268,14 @@ if __name__ == "__main__":
     print("\nGreedy rollout from s_init:")
     print(f"(s_init = {INIT_STATE})")
     for idx, (s, a) in enumerate(rollout):
+        with torch.no_grad():
+            q_vals = trained_q(state_to_tensor(s)).squeeze(0).cpu().numpy()
+        q_row = np.round(q_vals, 3)
         if a is None:
-            print(f"{idx:02d}: s = {s} (terminal/unknown)")
+            print(f"{idx:02d}: s = {s}, Q(s,·) = {q_row} (terminal/unknown)")
         else:
             if idx + 1 < len(rollout):
                 s_next = rollout[idx + 1][0]
-                print(f"{idx:02d}: s = {s} --a={a}--> {s_next}")
+                print(f"{idx:02d}: s = {s}, Q(s,·) = {q_row} --a={a}--> {s_next}")
             else:
-                print(f"{idx:02d}: s = {s}, a = {a}")
+                print(f"{idx:02d}: s = {s}, Q(s,·) = {q_row}, a = {a}")

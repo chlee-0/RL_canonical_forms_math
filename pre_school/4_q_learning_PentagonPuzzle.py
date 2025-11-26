@@ -207,11 +207,16 @@ if __name__ == "__main__":
     print("\nGreedy rollout from s_init:")
     print(f"(s_init = {INIT_STATE})")
     for idx, (s, a) in enumerate(rollout):
+        q_row = Q.get(s)
+        if q_row is None:
+            q_str = "[unvisited]"
+        else:
+            q_str = np.round(q_row, 3)
         if a is None:
-            print(f"{idx:02d}: s = {s} (terminal/unknown)")
+            print(f"{idx:02d}: s = {s}, Q(s,·) = {q_str} (terminal/unknown)")
         else:
             if idx + 1 < len(rollout):
                 s_next = rollout[idx + 1][0]
-                print(f"{idx:02d}: s = {s} --a={a}--> {s_next}")
+                print(f"{idx:02d}: s = {s}, Q(s,·) = {q_str} --a={a}--> {s_next}")
             else:
-                print(f"{idx:02d}: s = {s}, a = {a}")
+                print(f"{idx:02d}: s = {s}, Q(s,·) = {q_str}, a = {a}")
