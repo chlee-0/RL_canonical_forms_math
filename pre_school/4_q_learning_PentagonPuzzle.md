@@ -22,11 +22,7 @@ thought of as labels on the vertices of a regular pentagon.
 **Actions.**  
 An action chooses a vertex $i \in \{0,1,2,3,4\}$.  
 Given a state $s$ and an action $i$, we update the triple $(i-1, i, i+1)$ (indices mod 5):
-$$
-s_{i-1}' = s_{i-1} + s_i,\quad
-s_i'     = -s_i,\quad
-s_{i+1}' = s_{i+1} + s_i,
-$$
+$$s_{i-1}' = s_{i-1} + s_i,\quad s_i'     = -s_i,\quad s_{i+1}' = s_{i+1} + s_i,$$
 and all other coordinates stay unchanged. The transition is **deterministic**.
 
 **Termination (Goal).**  
