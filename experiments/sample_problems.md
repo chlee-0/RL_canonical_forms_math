@@ -40,7 +40,20 @@ It is a standard fact that every matrix $A$ is row-equivalent to a unique RREF.
 
 - Example
 
-  $$\displaystyle   A=\begin{bmatrix}   1&2&1&1\\   2&4&0&6\\   3&6&3&7   \end{bmatrix}   \;\longrightarrow\;   \operatorname{RREF}(A)=   \begin{bmatrix}   1&2&0&0\\   0&0&1&0\\   0&0&0&1   \end{bmatrix}. $$
+  $$\displaystyle
+  A=\begin{bmatrix}
+  1&2&1&1\\
+  2&4&0&6\\
+  3&6&3&7
+  \end{bmatrix}
+  \;\longrightarrow\;
+  \mathrm{RREF}(A)=
+  \begin{bmatrix}
+  1&2&0&0\\
+  0&0&1&0\\
+  0&0&0&1
+  \end{bmatrix}.
+  $$
 
 
 ## Singular Value Decomposition (SVD) and diagonalization
@@ -58,7 +71,7 @@ We usually arrange them in nonincreasing order $\sigma_1\ge\cdots\ge\sigma_r>0$;
 
 - Mathematical definition
   - Any real matrix $A$ admits an SVD
-    $$A=U\,\Sigma\,V^{\top},\quad \Sigma=\operatorname{diag}(\sigma_1,\ldots,\sigma_r),\ \sigma_1\ge\cdots\ge\sigma_r\ge 0.$$
+    $$A=U\,\Sigma\,V^{\top},\quad \Sigma=\mathrm{diag}(\sigma_1,\ldots,\sigma_r),\ \sigma_1\ge\cdots\ge\sigma_r\ge 0.$$
   - $U,V$ are orthogonal. If singular values are sorted in descending order, then $\Sigma$ is unique (up to basis choice within degenerate blocks).
 
 - 2×2 example
