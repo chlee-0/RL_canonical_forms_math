@@ -64,3 +64,18 @@ is finite. This yields a **finite discrete action space** that still
 captures the standard elementary row operations needed to compute RREF,
 without exposing continuous scalar choices to the agent.
 
+## Running the 3×3 DQN experiment
+
+To train the DQN on random 3×3 integer matrices from scratch:
+
+```bash
+python experiments/RREF/dqn_rref_3x3.py
+```
+
+To resume training or evaluate from a previously saved weight file:
+
+```bash
+python experiments/RREF/dqn_rref_3x3.py \
+  --load-path experiments/RREF/dqn_rref_3x3.pt
+```
+
