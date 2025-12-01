@@ -8,7 +8,7 @@ This document lists candidate pure math problems centered around canonical forms
 We consider the group
 $$\mathrm{SL}(2,\mathbb Z)
 =\left\{
-\begin{bmatrix}a&b\\ c&d\end{bmatrix}
+\begin{matrix}a&b\\ c&d\end{matrix}
 : a,b,c,d\in\mathbb Z,\ ad-bc=1
 \right\},
 $$
@@ -19,8 +19,8 @@ $$z\longmapsto \frac{az+b}{cz+d},$$
 with the usual conventions for $z=\infty$ and $cz+d=0$.
 
 The standard generators are
-$$S=\begin{bmatrix}0&-1\\ 1&0\end{bmatrix},\quad
-T=\begin{bmatrix}1&1\\ 0&1\end{bmatrix}.$$
+$$S=\begin{matrix}0&-1\\ 1&0\end{matrix},\quad
+T=\begin{matrix}1&1\\ 0&1\end{matrix}.$$
 
 
 
@@ -41,18 +41,18 @@ It is a standard fact that every matrix $A$ is row-equivalent to a unique RREF.
 - Example
 
   $$\displaystyle
-  A=\begin{bmatrix}
+  A=\begin{matrix}
   1&2&1&1\\
   2&4&0&6\\
   3&6&3&7
-  \end{bmatrix}
+  \end{matrix}
   \;\longrightarrow\;
   \mathrm{RREF}(A)=
-  \begin{bmatrix}
+  \begin{matrix}
   1&2&0&0\\
   0&0&1&0\\
   0&0&0&1
-  \end{bmatrix}.
+  \end{matrix}.
   $$
 
 
@@ -78,10 +78,10 @@ We usually arrange them in nonincreasing order $\sigma_1\ge\cdots\ge\sigma_r>0$;
 Compute an explicit SVD for a simple $2\times 2$ matrix, for example
   $$
   A =
-  \begin{bmatrix}
+  \begin{matrix}
     3 & 1\\
     0 & 2
-  \end{bmatrix},
+  \end{matrix},
   $$
 
 
