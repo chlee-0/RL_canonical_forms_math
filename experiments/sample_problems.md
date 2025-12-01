@@ -6,12 +6,7 @@ This document lists candidate pure math problems centered around canonical forms
 ## Action of $\mathrm{SL}(2,\mathbb Z)$ on the projective line
 
 We consider the group
-$$\mathrm{SL}(2,\mathbb Z)
-=\left\{
-\begin{matrix}a&b\\ c&d\end{matrix}
-: a,b,c,d\in\mathbb Z,\ ad-bc=1
-\right\},
-$$
+$$\mathrm{SL}(2,\mathbb Z)=\left\{\begin{matrix}a&b\\ c&d\end{matrix}: a,b,c,d\in\mathbb Z,\ ad-bc=1\right\},$$
 and its action on the projective line
 $$\mathbb P^1(\mathbb Q)=\mathbb Q\cup\{\infty\}$$
 by fractional linear transformations
@@ -40,20 +35,7 @@ It is a standard fact that every matrix $A$ is row-equivalent to a unique RREF.
 
 - Example
 
-  $$\displaystyle
-  A=\begin{matrix}
-  1&2&1&1\\
-  2&4&0&6\\
-  3&6&3&7
-  \end{matrix}
-  \;\longrightarrow\;
-  \mathrm{RREF}(A)=
-  \begin{matrix}
-  1&2&0&0\\
-  0&0&1&0\\
-  0&0&0&1
-  \end{matrix}.
-  $$
+  $$A=\begin{matrix}  1&2&1&1\\  2&4&0&6\\  3&6&3&7  \end{matrix}  \;\longrightarrow\;  \mathrm{RREF}(A)=  \begin{matrix}  1&2&0&0\\  0&0&1&0\\  0&0&0&1  \end{matrix}.  $$
 
 
 ## Singular Value Decomposition (SVD) and diagonalization
