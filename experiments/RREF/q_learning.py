@@ -35,11 +35,11 @@ class RewardConfig:
 class RREFEnv3x3:
     def __init__(self):
         # Initial 3x5 matrix (float for simplicity)
-        self.initial_matrix = np.array([
-            [2.0, -1, 3, 0.0, 5],
-            [4, 2, -1, 1, 1],
-            [-2, 3, 0, 2, -4],
-        ], dtype=float)
+        # self.initial_matrix = np.array([
+        #     [2.0, -1, 3, 0.0, 5],
+        #     [4, 2, -1, 1, 1],
+        #     [-2, 3, 0, 2, -4],
+        # ], dtype=float)
         # self.initial_matrix = np.array([
         #     [2.0, 4.0, -2.0],
         #     [1.0, 1.0,  1.0],
@@ -50,12 +50,18 @@ class RREFEnv3x3:
         #     [-3,5,-4],
         #     [3,-5,3],
         # ], dtype=float)  
+        # self.initial_matrix = np.array([
+        #     [ 2, -1,  3,  0,  5, -2],
+        #     [ 4,  2, -1,  1,  1,  0],
+        #     [-2,  3,  0,  2, -4,  1],
+        #     [ 3, -2,  4, -1,  0,  3]
+        # ], dtype=float)
         self.initial_matrix = np.array([
-            [ 2, -1,  3,  0,  5, -2],
-            [ 4,  2, -1,  1,  1,  0],
-            [-2,  3,  0,  2, -4,  1],
-            [ 3, -2,  4, -1,  0,  3]
-        ], dtype=float)
+            [ 2, 3, 1,  4,  -9, 17],
+            [ 1, 1, 1,  1,  -3,  6],
+            [ 1, 1, 1,  2, -5,  8],
+            [ 2, 2, 2, 3,  -8,  14]
+        ], dtype=float)        
 
 
         n_rows, n_cols = self.initial_matrix.shape
@@ -99,7 +105,7 @@ class RREFEnv3x3:
         A = np.round(self.matrix, decimals=8)  # numerical stability
         m, n = A.shape
         pivot_col = -1
-        seen_nonzero_row = False
+        seen_zero_row = False
 
         for i in range(m):
             # Find first non-zero in row i
@@ -107,15 +113,16 @@ class RREFEnv3x3:
             nonzero_indices = [j for j, val in enumerate(row) if abs(val) > 1e-8]
 
             if not nonzero_indices:
-                # Row is all zero
-                if seen_nonzero_row:
-                    # OK: zero rows are allowed at bottom
-                    continue
-                else:
-                    # Could still be all-zero matrix; just continue
-                    continue
+                # Row is all zero. Once a zero row appears, all later rows
+                # must also be zero in RREF/REF.
+                seen_zero_row = True
+                continue
             else:
-                seen_nonzero_row = True
+                # If we already saw a zero row, any subsequent non-zero row
+                # violates the "all zero rows at the bottom" rule.
+                if seen_zero_row:
+                    return False
+
                 j = nonzero_indices[0]
                 # Pivot must move strictly to the right
                 if j <= pivot_col:
